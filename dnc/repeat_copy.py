@@ -66,6 +66,27 @@ def masked_sigmoid_cross_entropy(logits,
   return loss
 
 
+def masked_accuracy(logits,
+                    target,
+                    mask,
+                    time_average=False):
+  """
+  """
+  acc = tf.cast(tf.equal(target, logits), dtype=logits.dtype)
+  acc_time_batch = tf.reduce_min(acc, axis=2)
+  acc_batch = tf.reduce_sum(acc_time_batch * mask, axis=0)
+  acc_batch = tf.clip_by_value(acc_batch, clip_value_min=0, clip_value_max=1)
+
+  batch_size = tf.cast(tf.shape(logits)[1], dtype=acc_time_batch.dtype)
+
+  if time_average:
+    mask_count = tf.reduce_sum(mask, axis=0)
+    acc_batch /= (mask_count + np.finfo(np.float32).eps)
+
+  acc = 100. * tf.reduce_sum(acc_batch) / batch_size
+  return acc
+
+
 def bitstring_readable(data, batch_size, model_output=None, whole_batch=False):
   """Produce a human readable representation of the sequences in data.
 
