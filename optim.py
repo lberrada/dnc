@@ -20,7 +20,7 @@ def get_optimizer(FLAGS):
     from alig.tf import AliG
     if FLAGS.learning_rate <= 0:
       FLAGS.learning_rate = None
-    optimizer = AliG(FLAGS.learning_rate)
+    optimizer = AliG(FLAGS.learning_rate, eps=0)
 
   if FLAGS.optimizer == 'l4adam':
     import L4

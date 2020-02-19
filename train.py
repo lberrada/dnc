@@ -136,6 +136,7 @@ def train(num_training_iterations, report_interval):
   optimizer = get_optimizer(FLAGS)
 
   if FLAGS.optimizer == "alig":
+    train_step = optimizer.minimize(train_loss, global_step=global_step)
     step_size = optimizer._learning_rate
   elif 'l4' in FLAGS.optimizer:
     FLAGS.learning_rate = FLAGS.fraction
@@ -152,9 +153,12 @@ def train(num_training_iterations, report_interval):
 
   hooks = []
   env_name = 'dnc-{opt}-{lr}'.format(opt=FLAGS.optimizer,
-                                           lr=FLAGS.learning_rate)
-  plotter = mlogger.VisdomPlotter({'env': env_name, 'server': 'http://atlas.robots.ox.ac.uk',
-                            'port': 9007}, manual_update=True)
+                                     lr=FLAGS.learning_rate)
+  if 'VISDOM_SERVER' in os.environ:
+    plotter = mlogger.VisdomPlotter({'env': env_name, 'server': os.environ['VISDOM_SERVER'],
+                                   'port': 9007}, manual_update=True)
+  else:
+    plotter = None
 
   xp = mlogger.Container()
   hparams = dict([(key, getattr(FLAGS, key)) for key in FLAGS.__flags])
@@ -165,7 +169,8 @@ def train(num_training_iterations, report_interval):
   xp.log_loss = mlogger.metric.Simple(plotter=plotter, plot_title='Log-Loss')
   xp.step_size = mlogger.metric.Average(plotter=plotter, plot_title='Step-Size')
 
-  plotter.set_win_opts(name="Log-Loss", opts={'ytype': 'log'})
+  if plotter:
+    plotter.set_win_opts(title="Log-Loss", opts={'ytype': 'log'})
 
   # Train.
   with tf.train.SingularMonitoredSession(
